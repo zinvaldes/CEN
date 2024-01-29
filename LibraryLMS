@@ -1,0 +1,184 @@
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Scanner;
+
+/**
+ * Zinnia Valdes
+ * CEN3024
+ * Date: 01/23/2024
+ */
+public class LibraryLMS {
+
+    // File path for the library's collection
+    private static final String LIBRARY_FILE_PATH = "/Users/zinvaldes/Desktop/Spring 2024/library.txt";
+
+    // List to store the books in the library
+    //using private for good practice to use within the class or same package
+    private final List<Book> library;
+
+    /**
+     * Constructor for the Librarylms class.
+     * loading data from the text file.
+     */
+    public LibraryLMS() {
+        library = new ArrayList<>();
+        loadLibraryData();
+    }
+
+    private void loadLibraryData() {
+        try (BufferedReader br = new BufferedReader(new FileReader(LIBRARY_FILE_PATH))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] parts = line.split(",");
+                int id = Integer.parseInt(parts[0]);
+                String title = parts[1];
+                String author = parts[2];
+                // Create a new book and add it to the library
+                library.add(new Book(id, title, author));
+            }
+        } catch (IOException | NumberFormatException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Save library to the text file.
+     */
+    private void saveLibrary() {
+        try (FileWriter writer = new FileWriter(LIBRARY_FILE_PATH)) {
+            for (Book book : library) {
+                // Write each book's information to a new line in the file
+                writer.write(book.getId() + "," + book.getTitle() + "," + book.getAuthor() + "\n");
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Add a new book to the library.
+     */
+    public void addBook(int id, String title, String author) {
+        Book newBook = new Book(id, title, author);
+        library.add(newBook);
+        saveLibrary(); // Save the added book to the file
+    }
+
+    /**
+     * Remove a book from the library using its ID.
+     */
+    public void removeBook(int id) {
+        library.removeIf(book -> book.getId() == id);
+        saveLibrary(); // Save the updated library data to the file
+    }
+
+    /**
+     * List all books currently in the library.
+     */
+    public void listAllBooks() {
+        System.out.println("Library Collection:");
+        for (Book book : library) {
+            System.out.println(book);
+        }
+    }
+    /**
+     * The main method to create instance
+     */
+    public static void main(String[] args) {
+        LibraryLMS librarySystem = new LibraryLMS();
+        Scanner scanner = new Scanner(System.in);
+
+        while (true) {
+            System.out.println("\nLibrary Management Menu:");
+            System.out.println("1. Add a new book");
+            System.out.println("2. Remove a book by ID");
+            System.out.println("3. List all books");
+            System.out.println("4. Exit");
+            System.out.print("Enter your choice: ");
+
+            int choice = scanner.nextInt();
+            scanner.nextLine();
+
+            switch (choice) {
+                case 1:
+                    System.out.print("Enter book ID: ");
+                    int newId = scanner.nextInt();
+                    scanner.nextLine();
+                    System.out.print("Enter book title: ");
+                    String newTitle = scanner.nextLine();
+                    System.out.print("Enter book author: ");
+                    String newAuthor = scanner.nextLine();
+                    librarySystem.addBook(newId, newTitle, newAuthor);
+                    System.out.println("Book added successfully!");
+                    break;
+                case 2:
+                    System.out.print("Enter the ID of the book to remove: ");
+                    int removeId = scanner.nextInt();
+                    librarySystem.removeBook(removeId);
+                    System.out.println("Book removed!");
+                    break;
+                case 3:
+                    librarySystem.listAllBooks();
+                    break;
+                case 4:
+                    System.out.println("Exiting Library Management Menu. Goodbye!");
+                    scanner.close();
+                    System.exit(0);
+                default:
+                    System.out.println("Invalid choice. Please try again.");
+            }
+        }
+    }
+}
+
+/**
+ * Book class with ID, title, and author.
+ */
+class Book {
+
+    private int id;
+    private String title;
+    private String author;
+
+    /**
+     * Constructor for the Book class.
+     */
+    public Book(int id, String title, String author) {
+        this.id = id;
+        this.title = title;
+        this.author = author;
+    }
+
+    /**
+     * Get the ID of the book and return it.
+     */
+    public int getId() {
+        return id;
+    }
+
+    /**
+     * Get the title of the book and return it.
+     */
+    public String getTitle() {
+        return title;
+    }
+
+    /**
+     * Get the author of the book and return it.
+     */
+    public String getAuthor() {
+        return author;
+    }
+
+    /**
+     * Override the toString method
+     */
+    @Override
+    public String toString() {
+        return "ID: " + id + ", Title: " + title + ", Author: " + author;
+    }
+}
