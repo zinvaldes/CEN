@@ -1,0 +1,180 @@
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.List;
+import java.util.Scanner;
+
+public class LibraryLMS {
+
+    public static final String LIBRARY_FILE_PATH = "/Users/zinvaldes/Desktop/Spring 2024/library.txt"; //file path for library
+    public final List<Book> library; //list to hold the library's books
+
+    public LibraryLMS() { //constructor to initialize library list and load library data
+        library = new ArrayList<>();
+        loadLibraryData();
+    }
+
+    private void loadLibraryData() { // method to load library date from file
+        try (BufferedReader br = new BufferedReader(new FileReader(LIBRARY_FILE_PATH))) {
+            String line;
+            while ((line = br.readLine()) != null) { //split each line into book data
+                String[] parts = line.split(",");
+                int id = Integer.parseInt(parts[0]); //parse book datas
+                String title = parts[1];
+                String author = parts[2];
+                boolean isCheckedOut = parts.length > 3 && Boolean.parseBoolean(parts[3]);
+                String dueDate = parts.length > 4 ? parts[4] : null;
+                Book book = new Book(id, title, author, isCheckedOut); //create a new book object and add it to the list
+                if (dueDate != null && !dueDate.isEmpty()) {
+                    book.setDueDate(dueDate);
+                }
+                library.add(book);
+            }
+        } catch (IOException e) {
+            System.err.println("Failed to load library data: " + e.getMessage());
+        }
+    }
+
+    public void addBook(int id, String title, String author) { //method to add a new book and save it to file
+        try (FileWriter writer = new FileWriter(LIBRARY_FILE_PATH, true)) {
+            writer.write(id + "," + title + "," + author + ",false,\n");
+        } catch (IOException e) {
+            System.err.println("Failed to add book to library data: " + e.getMessage());
+        }
+        library.add(new Book(id, title, author, false));// add the new book to memory
+    }
+
+    private void removeBookById(int id) { //method to remove a book by ID
+        library.removeIf(book -> book.getId() == id);
+        saveLibrary();
+    }
+
+    private void removeBookByTitle(String title) { //remove book by title
+        library.removeIf(book -> book.getTitle().equalsIgnoreCase(title));
+        saveLibrary();
+    }
+
+    public void listAllBooks() {
+        System.out.println("Library Collection:");
+        for (Book book : library) {
+            System.out.println(book);
+        }
+    }
+
+    private void checkOutBook(String title) { //method to check out book
+        for (Book book : library) {
+            if (book.getTitle().equalsIgnoreCase(title) && !book.isCheckedOut()) { //mark the book as checked out and set date
+                book.checkOut();
+                Calendar cal = Calendar.getInstance();
+                cal.add(Calendar.WEEK_OF_YEAR, 4);
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+                book.setDueDate(sdf.format(cal.getTime()));
+                saveLibrary();
+                System.out.println("Book '" + title + "' checked out successfully! Due date: " + book.getDueDate());
+                return;
+            }
+        }
+        System.out.println("Book '" + title + "' not found or already checked out.");
+    }
+
+    private void checkInBook(String title) { //method to check in a book by title
+        for (Book book : library) {
+            if (book.getTitle().equalsIgnoreCase(title) && book.isCheckedOut()) {
+                book.checkIn();
+                saveLibrary();
+                System.out.println("Book '" + title + "' checked in successfully!");
+                return;
+            }
+        }
+        System.out.println("Book '" + title + "' not found or not checked out.");
+    }
+
+    private void saveLibrary() { //method to save the current state of the library back to file
+        try (FileWriter writer = new FileWriter(LIBRARY_FILE_PATH, false)) {
+            for (Book book : library) { //write each book's data to file
+                writer.write(book.getId() + "," + book.getTitle() + "," + book.getAuthor() + "," + book.isCheckedOut() + "," + (book.getDueDate() != null ? book.getDueDate() : "") + "\n");
+            }
+        } catch (IOException e) {
+            System.err.println("Failed to save library data: " + e.getMessage());
+        }
+    }
+
+    public static void main(String[] args) {
+        LibraryLMS librarySystem = new LibraryLMS();
+        Scanner scanner = new Scanner(System.in);
+
+        // Add a new book example
+        System.out.println("Adding a new book to the library.");
+        librarySystem.addBook(123, "Example Book", "Author Example");
+
+        // List all books
+        librarySystem.listAllBooks();
+
+        // Remove book by ID
+        System.out.println("Enter the ID of the book to remove:");
+        int id = scanner.nextInt();
+        librarySystem.removeBookById(id);
+        scanner.nextLine(); 
+
+        // Remove book by Title
+        System.out.println("Enter the title of the book to remove:");
+        String titleToRemove = scanner.nextLine();
+        librarySystem.removeBookByTitle(titleToRemove);
+
+        // Check out a book
+        System.out.println("Enter the title of the book to check out:");
+        String titleToCheckOut = scanner.nextLine();
+        librarySystem.checkOutBook(titleToCheckOut);
+
+        // Check in a book
+        System.out.println("Enter the title of the book to check in:");
+        String titleToCheckIn = scanner.nextLine();
+        librarySystem.checkInBook(titleToCheckIn);
+
+        // Final list of all books to show changes
+        librarySystem.listAllBooks();
+
+        scanner.close();
+    }
+}
+
+class Book {
+    private final int id;
+    private final String title;
+    private final String author;
+    private boolean checkedOut;
+    private String dueDate;
+
+    public Book(int id, String title, String author, boolean checkedOut) {
+        this.id = id;
+        this.title = title;
+        this.author = author;
+        this.checkedOut = checkedOut;
+    }
+
+    public int getId() { return id; } //getter and setter methods for book
+    public String getTitle() { return title; }
+    public String getAuthor() { return author; }
+    public boolean isCheckedOut() { return checkedOut; }
+    public String getDueDate() { return dueDate; }
+    public void checkOut() { this.checkedOut = true; }
+    public void checkIn() { this.checkedOut = false; this.dueDate = null; }
+    public void setDueDate(String dueDate) { this.dueDate = dueDate; }
+
+    @Override
+    public String toString() {
+        return "ID: " + id + ", Title: " + title + ", Author: " + author +
+                ", Status: " + (checkedOut ? "Checked out, Due: " + dueDate : "Available");
+    }
+}
+
+
+
+
+
+
+
